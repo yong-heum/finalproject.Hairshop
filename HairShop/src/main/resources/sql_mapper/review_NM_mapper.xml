@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="review">
+
+<!-- 리뷰 등록 할 때 매장 검색 (ajax) 불러오기 -->
+	<select id="shopName_Call" parameterType="String" resultType="String">
+		SELECT SHOPNAME FROM HS_NM_SHOP WHERE SHOPNAME like #{shopName}
+	</select>
+	
+<!-- 리뷰 등록 할 때 디자이너 검색 (ajax) 불러오기 -->
+	<select id="shopDisigner_Call" parameterType="String" resultType="DN_User">
+		SELECT NAME,BELONG_SHOP FROM HS_DN_USER WHERE BELONG_SHOP like #{shopName}
+	</select>
+	
+<!-- 리뷰게시판 게시글 올리기  -->
+	<insert id="reviewInsert" parameterType="review">
+		INSERT INTO HS_NM_REVIEWBOARD VALUES(REVIEWBOARDNUM_SEQ.NEXTVAL, #{id}, #{name}, #{title}, #{contents},
+		#{grade}, #{shopName}, #{disigner}, #{pid_Shop}, 0, TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS'),0)
+	</insert>
+	
+<!-- 리뷰게시판 게시글 작성 후 정보 불러오기 -->
+	<select id="reviewInsertSelect" parameterType="review" resultType="review">
+	SELECT * FROM HS_NM_REVIEWBOARD WHERE ID=#{id} AND TITLE=#{title} AND CONTENTS=#{contents} AND SHOPNAME=#{shopName} AND DISIGNER=#{disigner}
+	AND REVIEW_DATE=(SELECT MAX(REVIEW_DATE)AS REVIEW_DATE FROM HS_NM_REVIEWBOARD)
+	</select>
+	
+<!-- 리뷰 정보 가져오기(페이징) -->
+	<select id="reviewList" parameterType="page" resultType="review">
+		SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY BOARDNUM DESC) AS RN, HS_NM_REVIEWBOARD.* FROM HS_NM_REVIEWBOARD)
+		WHERE RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+<!-- 리뷰 게시판 정보 갯수 불러오기 (페이징) -->
+	<select id="reviewBoardCount"  resultType="int">
+		 SELECT COUNT(*) FROM HS_NM_REVIEWBOARD
+	</select>
+	
+<!-- 리뷰게시판 상세정보 조회 -->
+	<select id="reviewSelect" parameterType="int" resultType="review">
+		SELECT * FROM HS_NM_REVIEWBOARD WHERE BOARDNUM=#{boardNum}
+	</select>
+	
+<!-- 조회수증가 -->
+	<update id="reviewHitUp">
+		  UPDATE HS_NM_REVIEWBOARD SET HIT=HIT+1 WHERE BOARDNUM=#{boardNum}
+	</update>
+	
+<!-- 리뷰 수정 -->
+	<update id="reviewUpdate"  parameterType="review">
+		  UPDATE HS_NM_REVIEWBOARD SET TITLE=#{title}, CONTENTS=#{contents} WHERE BOARDNUM=#{boardNum}
+	</update>
+	
+<!-- 리뷰 게시글 삭제 -->
+	<delete id="reviewDelete" parameterType="int">
+		DELETE FROM HS_NM_REVIEWBOARD WHERE BOARDNUM=#{boardNum}
+	</delete>
+	
+<!-- 리뷰 댓글 달기 -->
+	<insert id="reviewComment" parameterType="comment">
+		INSERT INTO HS_NM_COMMENT VALUES(REVIEWCOMMENTNUM_SEQ.NEXTVAL, #{boardNum}, #{id}, #{pid},#{contents}, 
+		TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS'))
+	</insert>
+	
+<!-- 리뷰 댓글 불러오기 -->
+	<select id="CommentList" parameterType="int" resultType="comment">
+		SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY COMMENT_DATE ASC) AS RN, HS_NM_COMMENT.* FROM HS_NM_COMMENT WHERE BOARDNUM=#{boardNum})
+		HS_NM_COMMENT WHERE BOARDNUM=#{boardNum} ORDER BY COMMENT_DATE DESC
+	</select>
+	
+<!-- 리뷰 게시글 삭제 -->
+	<delete id="commentDelete" parameterType="int">
+		DELETE FROM HS_NM_COMMENT WHERE COMMENTNUM=#{commentNum}
+	</delete>
+	
+<!-- 리뷰 댓글의 답변 올리기  -->
+	<insert id="reviewComment_Second" parameterType="comment">
+		INSERT INTO HS_NM_COMMENT_SECOND VALUES(REVIEWCOMMENTNUM_SECOND_SEQ.NEXTVAL, #{commentNum}, #{boardNum}, #{id}, #{pid},#{contents}, 
+		TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS'))
+	</insert>
+	
+<!-- 리뷰 댓글의 답변 불러오기  -->
+	<select id="comment_ScondList" parameterType="int" resultType="comment">
+		SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY COMMENT_DATE) AS RN, HS_NM_COMMENT_SECOND.* FROM HS_NM_COMMENT_SECOND)
+		HS_NM_COMMENT_SECOND WHERE BOARDNUM=#{boardNum} ORDER BY COMMENT_DATE
+	</select>
+	
+<!-- 리뷰 게시글 삭제 -->
+	<delete id="comment_SecondDelete" parameterType="int">
+		DELETE FROM HS_NM_COMMENT_SECOND WHERE COMMENTNUM_SECOND=#{commentNum_Second}
+	</delete>
+	
+<!-- 리뷰댓글 카운트  -->
+	<select id="comment_ScondCount" parameterType="int" resultType="comment">
+		SELECT HS.COMMENTNUM ,(SELECT COUNT(*) FROM HS_NM_COMMENT_SECOND HN WHERE HS.COMMENTNUM  = HN.COMMENTNUM ) as COUNT 
+ 		FROM HS_NM_COMMENT HS WHERE BOARDNUM = #{boardNum} ORDER BY COMMENTNUM DESC
+	</select>
+	
+<!-- 아이디로 매장 이름 불러오기  -->
+	<select id="shopName" parameterType="String" resultType="String">
+		SELECT BELONG_SHOP FROM HS_DN_USER WHERE ID=#{id}
+	</select>
+	
+<!-- 로그인한 디자이너의 포인트 지급 가능한 리뷰정보 불러오기  -->
+	<select id="review_PointJSP" parameterType="DN_user" resultType="review">
+		SELECT * FROM HS_NM_REVIEWBOARD WHERE DISIGNER=#{name} AND PID_SHOP=#{belong_Shop} AND POINT_RS='0'
+	</select>
+	
+<!-- DN_user 포인트지급 횟수(실제 방문후 시술완료 했는지)가 잇는지확인  -->
+	<select id="DN_POINT_COUNT" parameterType="String" resultType="int">
+		SELECT POINT_COUNT FROM HS_DN_USER WHERE PID=#{pid}
+	</select>
+	
+<!-- NM_user 포인트지급 횟수(실제 방문후 시술완료 했는지)가 잇는지확인  -->
+	<select id="NM_POINT_COUNT" parameterType="String" resultType="int">
+		SELECT POINT_COUNT FROM HS_NM_USER WHERE PID=#{pid}
+	</select>
+	
+<!-- DN_user 승인하기 클릭시 포인트 지급  -->
+	<update id="DN_POINT_Pay"  parameterType="String">
+		  UPDATE HS_DN_USER SET POINT=POINT+5000, POINT_COUNT=POINT_COUNT-1 WHERE PID=#{pid}
+	</update>
+	
+<!-- DN_user 승인하기 클릭시 포인트 지급  -->
+	<update id="NM_POINT_Pay"  parameterType="String">
+		  UPDATE HS_NM_USER SET POINT=POINT+5000, POINT_COUNT=POINT_COUNT-1 WHERE PID=#{pid}
+	</update>
+	
+<!-- 게시물 포인트 지급완료로 바꾸기 -->
+	<update id="review_Point_Pay"  parameterType="int">
+		  UPDATE HS_NM_REVIEWBOARD SET POINT_RS='1' WHERE BOARDNUM=#{boardNum}
+	</update>
+
+<!-- 댓글 카운트 -->
+	<select id="commentCount" parameterType="page" resultType="int">
+		SELECT (SELECT COUNT(*) FROM HS_NM_COMMENT HN WHERE HS_NM_REVIEWBOARD.BOARDNUM  = HN.BOARDNUM ) as COUNT 
+		FROM (SELECT ROW_NUMBER() OVER(ORDER BY BOARDNUM DESC) AS RN, HS_NM_REVIEWBOARD.* FROM HS_NM_REVIEWBOARD)
+		HS_NM_REVIEWBOARD WHERE RN BETWEEN #{startRow} AND #{endRow}  ORDER BY BOARDNUM DESC
+	</select>
+</mapper>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="DN_user">
+
+<!-- 회원가입 처리 -->
+	<insert id="DN_userJoin" parameterType="DN_user">
+		INSERT INTO HS_DN_USER
+		VALUES(#{pid},#{id},#{password},#{name},#{gender},#{birthDay},#{tel},#{adrs_post_code},#{adrs_street_1},
+		#{adrs_street_2},#{email},0,#{profile_Photo_Name},'',5000,#{introduce},'','',0)
+	</insert>
+
+<!-- 회원가입 할 때 유니크USER에 저장 -->
+	<insert id="DN_uniqueUserJoin" parameterType="DN_user">
+		INSERT INTO HS_UNIQUE_USER
+		VALUES(#{pid},#{id},#{password},#{name},#{gender},#{birthDay},#{tel},#{adrs_post_code},#{adrs_street_1},#{adrs_street_2},#{email},sysdate,'','','0')
+	</insert>
+
+<!-- 아이디 중복확인 처리 -->
+	<select id="DN_idOverlap" parameterType="String" resultType="String">
+		SELECT ID FROM HS_UNIQUE_USER WHERE ID=#{id}
+	</select>
+
+<!-- 회원가입 후에 메일인증 눌렀을 때 -->
+	<update id="DN_joinsenMail" parameterType="String">
+		UPDATE HS_DN_USER SET EMAIL_RS=1 WHERE PID=#{pid}
+	</update>
+
+<!-- 이메일 인증 처리(정보 불러와 중복인증 인지 확인) -->
+	<select id="DN_userLoginCheck" parameterType="String" resultType="DN_user">
+	SELECT * FROM HS_DN_USER WHERE PID=#{pid}
+	</select>
+	
+<!-- 로그인 처리(정보 불러오기) -->
+	<select id="DN_userLogin" parameterType="String" resultType="DN_user">
+	SELECT * FROM HS_DN_USER WHERE ID=#{id}  <!-- AND PASSWORD=#{password} (암호화때문에 지움)-->
+	</select>
+	
+<!-- 회원 상세 정보 불러오기  -->
+	<select id="DN_userSelect" parameterType="String" resultType="DN_user">
+	SELECT * FROM ( SELECT HS_UNIQUE_USER.*, ROW_NUMBER() OVER(ORDER BY UPDATE_DATE DESC) RN FROM HS_UNIQUE_USER WHERE ID=#{id}) HS_UNIQUE_USER WHERE RN=1 AND ID=#{id}
+	</select>
+	
+<!-- 회원정보 수정 -->
+	<update id="DN_userUpdate" parameterType="NM_user">
+	UPDATE HS_DN_USER SET NAME=#{name}, TEL=#{tel}, EMAIL=#{email}, ADRS_POST_CODE=#{adrs_post_code}, ADRS_STREET_1=#{adrs_street_1}, ADRS_STREET_2=#{adrs_street_2} WHERE PID=#{pid}
+	</update>
+	
+<!-- 회원 탈퇴 -->
+	<delete id="DN_userDelete" parameterType="String">
+	DELETE FROM HS_DN_USER WHERE PID=#{pid}
+	</delete>
+	
+<!-- 비밀번호변경 -->
+	<update id="DN_userPasswordUpdate" parameterType="NM_user">
+	UPDATE HS_DN_USER SET PASSWORD=#{password} WHERE PID=#{pid}
+	</update>
+	
+<!-- 아이디 찾기(정보 불러오기) -->
+	<select id="DN_idFind" parameterType="String" resultType="DN_user">
+	SELECT * FROM HS_DN_USER WHERE EMAIL=#{email} AND NAME=#{name} AND BIRTHDAY=#{birthDay} AND TEL=#{tel}
+	</select>
+</mapper>

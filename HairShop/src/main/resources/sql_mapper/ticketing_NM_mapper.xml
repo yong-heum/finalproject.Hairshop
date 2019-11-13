@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ticketing">
+
+<!-- 디자이너 ID로 디자이너 PID 불러오기 -->
+	<select id="disigner_pid" parameterType="String" resultType="String">
+		SELECT PID FROM ( SELECT HS_UNIQUE_USER.*, ROW_NUMBER() OVER(ORDER BY UPDATE_DATE DESC ) RN FROM HS_UNIQUE_USER WHERE ID=#{id}) HS_UNIQUE_USER WHERE RN=1 AND ID=#{id}
+	</select>
+	
+<!-- 디자이너 ID로 디자이너 NAME 불러오기 -->
+	<select id="disigner_Name" parameterType="String" resultType="String">
+		SELECT NAME FROM ( SELECT HS_UNIQUE_USER.*, ROW_NUMBER() OVER(ORDER BY UPDATE_DATE DESC) RN FROM HS_UNIQUE_USER WHERE ID=#{id}) HS_UNIQUE_USER WHERE RN=1 AND ID=#{id}
+	</select>
+	
+<!-- 디자이너 아이디 불러오기 -->
+	<select id="disigner_id" parameterType="ticketing" resultType="String">
+		SELECT ID FROM HS_DN_USER WHERE NAME = #{disigner} AND BELONG_SHOP=#{shop_pid}
+	</select>
+	
+<!-- 매장 PID 불러오기 -->
+	<select id="shop_pid" parameterType="String" resultType="String">
+		SELECT PID FROM HS_NM_SHOP WHERE SHOPNAME = #{shopName}
+	</select>
+	
+	
+<!-- 시술 가격표 저장  -->
+	<insert id="priceInsert" parameterType="price">
+		INSERT INTO HS_DN_PRICE VALUES(
+		#{disigner_name},#{disigner_id},#{disigner_pid},#{shopName},#{shop_pid},#{work_Open},#{work_Closeds},
+		#{m_cut},#{m_purm},#{m_sc_purm},#{m_magic},#{m_b_magic},#{m_color},#{m_clinic},#{w_cut},
+		#{w_purm},#{w_d_purm},#{w_magic},#{w_b_magic},#{w_setting},#{w_m_setting},#{w_color},#{w_clinic},
+		#{rn_Open},#{rn_Closeds},#{rank},'0')
+	</insert>
+	
+<!-- 개인 시술 금액 정보 불러오기  -->
+	<select id="priceSelect" parameterType="String" resultType="price">
+		SELECT * FROM HS_DN_PRICE WHERE DISIGNER_ID = #{disigner_id}
+	</select>
+	
+<!-- 개인 시술금액 , 직급, 근무시간 수정  -->
+	<update id="priceUpdate" parameterType="price">
+		UPDATE HS_DN_PRICE SET WORK_OPEN=#{work_Open}, WORK_CLOSEDS=#{work_Closeds}, M_CUT=#{m_cut}, M_PURM=#{m_purm}, M_SC_PURM=#{m_sc_purm}, M_MAGIC=#{m_magic},
+		M_B_MAGIC=#{m_b_magic}, M_COLOR=#{m_color}, M_CLINIC=#{m_clinic}, W_CUT=#{w_cut}, W_PURM=#{w_purm}, W_D_PURM=#{w_d_purm}, W_MAGIC=#{w_magic}, 
+		W_B_MAGIC=#{w_b_magic}, W_SETTING=#{w_setting}, W_M_SETTING=#{w_m_setting}, W_COLOR=#{w_color}, W_CLINIC=#{w_clinic}, RANK=#{rank}
+		WHERE DISIGNER_ID=#{disigner_id}
+	</update>
+	
+<!-- 휴무등록 (Ajax), 예약자 확인  -->
+	<select id="ticketingCheck" parameterType="String" resultType="ticketing">
+		SELECT WORK_DATE FROM HS_NM_TICKETING WHERE WORK_DATE = #{closeds_Date}
+	</select>
+	
+<!-- 휴무등록 -->
+	<insert id="ClosedsInsert" parameterType="closeds">
+		INSERT INTO HS_NM_CLOSEDS VALUES(#{shopName}, #{disigner}, #{disigner_id}, #{disigner_pid}, #{closeds_Date})
+	</insert>
+	
+<!-- 휴무등록 (Ajax), 디자이너 소속매장 확인  -->
+	<select id="shopNameResult" parameterType="String" resultType="String">
+		SELECT BELONG_SHOP FROM HS_DN_USER WHERE PID = #{disigner_pid}
+	</select>
+	
+<!-- 휴무등록 (Ajax), 소속매장pid로 소속매장 이름 불러오기 -->
+	<select id="shopName" parameterType="String" resultType="String">
+		SELECT SHOPNAME FROM HS_NM_SHOP WHERE PID = #{shopNameRsult}
+	</select>
+	
+<!-- 휴무삭제 -->
+	<delete id="ClosedsDelete" parameterType="closeds">
+		DELETE FROM HS_NM_CLOSEDS WHERE DISIGNER_ID = #{disigner_id} AND CLOSEDS_DATE=#{closeds_Date} AND DISIGNER=#{disigner}
+	</delete>
+	
+<!-- DISIGNER, SHOPNAME을 이용햐 휴무 날짜 리스트 정보 가지고 이동(Ajax)  -->
+	<select id="closedsList" parameterType="closeds" resultType="String">
+		SELECT CLOSEDS_DATE FROM HS_NM_CLOSEDS WHERE DISIGNER=#{disigner} AND SHOPNAME=#{shopName}
+	</select>
+	
+<!-- DISIGNER_PID를 이용해 휴무 날짜 리스트 정보 가지고 이동(Ajax)  -->
+	<select id="closeds_InsertList" parameterType="String" resultType="String">
+		SELECT CLOSEDS_DATE FROM HS_NM_CLOSEDS WHERE DISIGNER_PID=#{disigner_pid}
+	</select>
+	
+<!-- DISIGNER, SHOPNAME를 이용해 예약 시간 리스트 정보 가지고 이동 -->
+	<select id="ticketing_List" parameterType="ticketing" resultType="ticketing">
+		SELECT TT.TIME,RN,
+		(SELECT WORK_TIME FROM HS_NM_TICKETING NT WHERE TT.TIME  = NT.WORK_TIME 
+		AND DISIGNER=#{disigner} AND SHOP_PID=#{shop_pid} AND WORK_DATE=#{work_Date} AND COMPLETE != '2' OR COMPLETE != NULL) 
+		AS WORK_TIME
+    	FROM HS_NM_TICKETING_TIME TT
+	</select>
+	
+<!-- 오픈시간 마감시간값으로 TICKETING_TIME테이블에서 RS값 찾아오기  -->
+	<select id="rs_Time" parameterType="String" resultType="int">
+		SELECT RN FROM HS_NM_TICKETING_TIME WHERE TIME=#{work_Open}
+	</select>
+	
+<!-- 예약자 PID,NAME불러오기  -->
+	<select id="customer_pid_Name" parameterType="String" resultType="NM_user">
+		SELECT PID,NAME FROM ( SELECT HS_UNIQUE_USER.*, ROW_NUMBER() OVER(ORDER BY UPDATE_DATE DESC) RN FROM HS_UNIQUE_USER WHERE ID=#{customer_id} ) HS_UNIQUE_USER WHERE RN=1 AND ID=#{customer_id}
+	</select>
+	
+<!-- 예약자 PID불러오기  -->
+	<select id="customer_pid" parameterType="String" resultType="String">
+		SELECT PID FROM ( SELECT HS_UNIQUE_USER.*, ROW_NUMBER() OVER(ORDER BY UPDATE_DATE DESC) RN FROM HS_UNIQUE_USER WHERE ID=#{customer_id}) HS_UNIQUE_USER WHERE RN=1 AND ID=#{customer_id}
+	</select>
+	
+<!-- 일반 고객의 잔여 포인트 정보 불러오기  -->
+	<select id="NM_User_point" parameterType="String" resultType="int">
+		SELECT POINT FROM HS_NM_USER WHERE PID=#{pid}
+	</select>
+	
+<!-- 디자이너 고객의 잔여 포인트 정보 불러오기  -->
+	<select id="DN_User_point" parameterType="String" resultType="int">
+		SELECT POINT FROM HS_DN_USER WHERE PID=#{pid}
+	</select>
+	
+<!-- 예약시 디자이너 pid가져오기 -->
+	<select id="ticketing_disigner_pid" parameterType="String" resultType="String">
+		SELECT PID FROM HS_DN_USER WHERE BELONG_SHOP=#{shop_pid} AND NAME=#{disigner}
+	</select>
+	
+<!-- 시술 예약하기 ticketing_Insert -->
+	<insert id="ticketing_Insert" parameterType="ticketing">
+		  INSERT INTO HS_NM_TICKETING VALUES(#{shopName},#{shop_pid},#{disigner},#{disigner_pid},#{customer_name},#{customer_id},
+		#{customer_pid},#{work},#{price_Original},#{price_Sale},#{price_After},#{work_Date},#{work_Time},'',0,#{point_Use})
+	</insert>
+	
+<!-- ticketHistoryJSP로 이동하면서 예매 내역 정보 불러오기  -->
+	<select id="ticketHistoryJSP" parameterType="String" resultType="ticketing">
+		SELECT * FROM HS_NM_TICKETING WHERE CUSTOMER_ID=#{id}
+	</select>
+
+<!-- 인반 고객 포인트 사용 후 잔여 포인트 저장  -->
+	<update id="NM_User_pointUpdate" parameterType="ticketing">
+		UPDATE HS_NM_USER SET POINT=#{point} WHERE PID=#{customer_pid}
+	</update>
+	
+<!-- 디자이너 고객 포인트 사용 후 잔여 포인트 저장  -->
+	<update id="DN_User_pointUpdate" parameterType="ticketing">
+		UPDATE HS_DN_USER SET POINT=#{point} WHERE PID=#{customer_pid}
+	</update>
+	
+<!-- 현제시간 불러오기  -->
+	<select id="sysDate_HH"  resultType="int">
+		SELECT TO_CHAR(SYSDATE, 'HH24') FROM DUAL
+	</select>
+	
+<!-- 현제 날짜만 가져와 예약 날짜와비교해 예약날짜만 보이지 않게 함. -->
+	<select id="sysDate"  resultType="String">
+		SELECT TO_CHAR(SYSDATE, 'yyyy-MM-dd') FROM DUAL
+	</select>
+	
+<!-- 디자이너 직급 불러오기 -->
+	<select id="rank"  parameterType="String" resultType="String">
+		SELECT RANK FROM HS_DN_PRICE WHERE SHOP_PID = #{shop_pid} AND PRICE_RS='1'
+	</select>
+	
+<!-- price등록시 디자이너 정보 price_rs바꾸기  -->
+	<update id="priceInsert_DNuser" parameterType="price">
+		UPDATE HS_DN_USER SET PRICE_RS='0' WHERE PID=#{disigner_pid}
+	</update>
+	
+<!-- ticketing_DN_ListJSP에서 값을 가지고 예약리스트 불러오기 (Ajax)  -->
+	<select id="ticketing_DN_List"  parameterType="ticketing" resultType="ticketing">
+		SELECT * FROM HS_NM_TICKETING WHERE DISIGNER_PID = #{disigner_pid} AND WORK_DATE=#{work_Date} AND COMPLETE='0' 
+		OR DISIGNER_PID = #{disigner_pid} AND WORK_DATE=#{work_Date} AND COMPLETE='1' 
+		ORDER BY WORK_TIME
+	</select>
+	
+<!-- ticketing_DN_List 모달에 고객이 디자이너에게 예매했던 내역 정보 불러오기(Ajax) -->
+	<select id="ticketHistory_DN"  parameterType="ticketing" resultType="ticketing">
+		SELECT * FROM HS_NM_TICKETING WHERE CUSTOMER_ID=#{customer_id} AND DISIGNER_PID=#{disigner_pid}
+	</select>
+	
+<!-- NM_user포인트 지급 할 수 있는 횟수 증가  -->
+	<update id="NM_user_Point_Count_Up" parameterType="String">
+	UPDATE HS_NM_USER SET POINT_COUNT=POINT_COUNT+1 WHERE PID=#{pid}
+	</update>
+	
+<!-- DN_user포인트 지급 할 수 있는 횟수 증가  -->
+	<update id="DN_user_Point_Count_Up" parameterType="String">
+	UPDATE HS_DN_USER SET POINT_COUNT=POINT_COUNT+1 WHERE PID=#{pid}
+	</update>
+	
+<!-- 디자이너가 시술 완료시  시술 완료로 바꾸고 포인트 지급이 가능 하게 함.  -->
+	<update id="work_completed" parameterType="ticketing">
+		UPDATE HS_NM_TICKETING SET COMPLETE='1', WORK_CONTENTS=#{work_Contents} 
+		WHERE WORK_DATE=#{work_Date} AND WORK_TIME=#{work_Time} AND DISIGNER_PID=#{disigner_pid} AND CUSTOMER_ID=#{customer_id}
+	</update>
+	
+<!--  예약 취소 complete 2로 변경  -->
+	<update id="ticketing_cancel" parameterType="ticketing">
+		UPDATE HS_NM_TICKETING SET COMPLETE='2'
+		WHERE WORK_DATE=#{work_Date} AND WORK_TIME=#{work_Time}
+	</update>
+
+<!-- 예약 강제 막기  -->
+	<insert id="ticketing_Block_Insert" parameterType="ticketing">
+		  INSERT INTO HS_NM_TICKETING VALUES(#{shopName},#{shop_pid},#{disigner},#{disigner_pid},'.','.',
+		'.','.','0','0','0',#{work_Date},#{work_Time},'',3,'0')
+	</insert>
+</mapper>

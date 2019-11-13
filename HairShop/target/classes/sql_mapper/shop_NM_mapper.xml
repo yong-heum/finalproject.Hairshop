@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="shop">
+
+
+<!-- 매장이름 중복확인 처리 -->
+	<select id="shopName_Overlap" parameterType="String" resultType="String">
+		SELECT SHOPNAME FROM HS_NM_SHOP WHERE SHOPNAME=#{shopName}
+	</select>
+
+<!-- 매장등록 -->
+	<insert id="shopInsert" parameterType="shop">
+		INSERT INTO HS_NM_SHOP VALUES(#{pid},#{shopName},#{introduce},#{openTime},#{closeTime},#{tel},#{openDate},
+		#{adrs_post_code},#{adrs_street_1},#{adrs_street_2},
+		#{shop_Photo_Name_add1},#{shop_Photo_Name_add2},#{shop_Photo_Name_add3},#{shop_Photo_Name_add4},#{shop_Photo_Name_add5},
+		#{shop_Manager},0,#{menu_Contents},#{menu_Photo_Name},SHOPBOARDNUM_SEQ.NEXTVAL)
+	</insert>
+
+<!-- 매장 목록보기 페이징(기본,회원주소) -->
+	<select id="shopPaging" parameterType="shop" resultType="shop">
+	 SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY(CASE WHEN ADRS_STREET_1 LIKE #{adrs_street_1} THEN 1 WHEN ADRS_STREET_1 LIKE #{adrs_street_1_2} THEN 2 
+	 WHEN ADRS_STREET_1 LIKE '서울%' THEN 3 WHEN ADRS_STREET_1 LIKE '경기%' THEN 4 WHEN ADRS_STREET_1 LIKE '부산%' THEN 5 END)) 
+	 AS RN, HS_NM_SHOP.* FROM HS_NM_SHOP)	
+	 WHERE SHOP_CONFIRM='1' AND RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+<!-- 매장 목록보기 페이징 (카운팅) -->
+	<select id="shopListCount" resultType="int">
+		SELECT COUNT(*) FROM HS_NM_SHOP WHERE SHOP_CONFIRM='1'
+	</select>
+	
+<!-- 매장 목록보기 페이징(검색) -->
+	<select id="shopSearchPaging" parameterType="shop" resultType="shop">
+	    SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY(CASE WHEN SHOPNAME LIKE #{searchContents} OR ADRS_STREET_1 LIKE #{searchContents} THEN 1 END)) 
+	    AS RN,HS_NM_SHOP.* FROM HS_NM_SHOP WHERE SHOP_CONFIRM='1' AND SHOPNAME LIKE #{searchContents} OR ADRS_STREET_1 LIKE #{searchContents})
+        WHERE SHOP_CONFIRM='1' AND RN BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+<!-- 매장 목록보기 페이징 (카운팅) -->
+	<select id="shopSearchCount"  parameterType="shop" resultType="int">
+		 SELECT COUNT(*) FROM HS_NM_SHOP WHERE SHOP_CONFIRM='1' AND SHOPNAME LIKE #{searchContents} OR SHOP_CONFIRM='1' AND ADRS_STREET_1 LIKE #{searchContents}
+	</select>
+	
+<!-- 매장목록 상세조회 (매장정보 불러오기) -->
+	<select id="shop_List"  parameterType="String" resultType="shop">
+		 SELECT * FROM HS_NM_SHOP WHERE PID=#{pid_Shop}
+	</select>
+	
+<!-- 매장목록 상세조회 (매장 디자이너 정보 불러오기) -->
+	<select id="shop_DN"  parameterType="String" resultType="DN_user">
+		 SELECT * FROM HS_DN_USER WHERE BELONG_SHOP=#{pid_Shop} AND PRICE_RS='1'
+	</select>
+	
+<!-- 시술 가격표 수정 (기존 정보 가져오기) -->
+	<select id="shop_MenuList"  parameterType="shop" resultType="shop">
+		 SELECT * FROM HS_NM_SHOP WHERE PID=#{pid_Shop}
+	</select>
+	
+<!-- 시술가격표 수정, 등록 -->
+	<update id="shop_MenuInsert"  parameterType="shop">
+		 UPDATE HS_NM_SHOP SET MENU_CONTENTS=#{menu_Contents}, MENU_PHOTO_NAME=#{menu_Photo_Name} WHERE PID=#{pid}
+	</update>
+	
+<!-- 시술 가격표 삭제 -->
+	<update id="menuDelete"  parameterType="String">
+		 UPDATE HS_NM_SHOP SET MENU_CONTENTS='', MENU_PHOTO_NAME='' WHERE PID=#{pid}
+	</update>
+	
+<!-- 매장 삭제 -->
+	<delete id="shopDelete" parameterType="shop">
+		DELETE FROM HS_NM_SHOP WHERE PID=#{pid}
+	</delete>
+	
+<!-- 매장수정 -->
+	<update id="shopUpdate"  parameterType="shop">	
+		 UPDATE HS_NM_SHOP SET SHOPNAME=#{shopName}, INTRODUCE=#{introduce}, OPENTIME=#{openTime}, CLOSETIME=#{closeTime},
+		 TEL=#{tel}, OPENDATE=#{openDate}, ADRS_POST_CODE=#{adrs_post_code}, ADRS_STREET_1=#{adrs_street_1}, ADRS_STREET_2=#{adrs_street_2},
+		 SHOP_PHOTO_NAME_ADD1=#{shop_Photo_Name_add1}, SHOP_PHOTO_NAME_ADD2=#{shop_Photo_Name_add2}, SHOP_PHOTO_NAME_ADD3=#{shop_Photo_Name_add3},
+		 SHOP_PHOTO_NAME_ADD4=#{shop_Photo_Name_add4}, SHOP_PHOTO_NAME_ADD5=#{shop_Photo_Name_add5}, MENU_CONTENTS=#{menu_Contents}, MENU_PHOTO_NAME=#{menu_Photo_Name} 
+		 WHERE PID=#{pid}
+	</update>
+	
+<!-- 매장 등록 신청 목록보기 -->
+	<select id="shopApply1"  resultType="shop">
+		 SELECT * FROM HS_NM_SHOP WHERE SHOP_CONFIRM='0'
+	</select>
+	
+<!-- 매장 등록 신청  목록 (등록하기)  -->
+	<update id="shopApply2"  parameterType="String">	
+		 UPDATE HS_NM_SHOP SET SHOP_CONFIRM='1' WHERE PID=#{pid}
+	</update>
+	
+<!-- 매장 등록 신청 목록 (삭제하기) -->
+	<delete id="shopApplyDelete" parameterType="String">
+		DELETE FROM HS_NM_SHOP WHERE PID=#{pid}
+	</delete>
+		
+<!-- 디자이너 소속매장 등록 신청 (목록 보기) -->
+	<select id="shop_Disigner_ApplyJSP"  resultType="DN_User">
+		 SELECT * FROM HS_DN_USER WHERE PRICE_RS='0'
+	</select>
+	
+<!-- 매장 등록 신청 목록 (승인하기) 디자이너 DB-->
+	<update id="shop_Disigner_Apply"  parameterType="DN_User">	
+		 UPDATE HS_DN_USER SET PRICE_RS='1',BELONG_SHOP=#{belong_Shop} WHERE ID=#{id}
+	</update>
+
+<!-- 매장 등록 신청 목록 (승인하기) PRICE DB-->
+	<update id="price_Disigner_Apply"  parameterType="DN_User">	
+		 UPDATE HS_DN_PRICE SET PRICE_RS='1' WHERE DISIGNER_ID=#{id}
+	</update>
+	
+<!-- 디자이너 DB price_rs값 바꾸기  -->
+	<update id="shop_Disigner_Apply_Update"  parameterType="DN_User">	
+		 UPDATE HS_DN_USER SET PRICE_RS='', BELONG_SHOP='' WHERE ID=#{id}
+	</update>
+	
+<!-- price DB정보 삭제 shop_Disigner_Apply_Delete -->
+	<delete id="shop_Disigner_Apply_Delete" parameterType="DN_User">
+		DELETE FROM HS_DN_PRICE WHERE DISIGNER_ID=#{id}
+	</delete>
+	
+<!-- price DB에서 디자이너 아이디로 매장 pid가져오기  -->
+	<select id="belong_Shop" parameterType="DN_User" resultType="String">
+		 SELECT SHOP_PID FROM HS_DN_PRICE WHERE DISIGNER_ID=#{id}
+	</select>
+	
+<!-- price DB에서 디자이너들의 직급 가져오기  -->
+	<select id="rank" parameterType="String" resultType="String">
+		 SELECT RANK FROM HS_DN_PRICE WHERE SHOP_PID=#{shop_pid}
+	</select>
+</mapper>

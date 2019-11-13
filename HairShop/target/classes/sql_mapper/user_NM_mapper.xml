@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="NM_user">
+
+<!-- 회원가입 처리 -->
+	<insert id="NM_userJoin" parameterType="NM_user">
+		INSERT INTO HS_NM_USER
+		VALUES(#{pid},#{id},#{password},#{name},#{gender},#{birthDay},#{tel},#{adrs_post_code},#{adrs_street_1},#{adrs_street_2},#{email},0,5000,0)
+	</insert>
+
+<!-- 회원가입 할 때 유니크USER에 저장 -->
+	<insert id="NM_uniqueUserJoin" parameterType="NM_user">
+		INSERT INTO HS_UNIQUE_USER
+		VALUES(#{pid},#{id},#{password},#{name},#{gender},#{birthDay},#{tel},#{adrs_post_code},#{adrs_street_1},#{adrs_street_2},#{email},sysdate,'','',0)
+	</insert>
+
+<!-- 아이디 중복확인 처리 -->
+	<select id="NM_idOverlap" parameterType="String" resultType="String">
+		SELECT ID FROM HS_UNIQUE_USER WHERE ID=#{id}
+	</select>
+
+<!-- 회원가입 후에 메일인증 눌렀을 때 -->
+	<update id="NM_joinsenMail" parameterType="String">
+		UPDATE HS_NM_USER SET EMAIL_RS=1 WHERE PID=#{pid}
+	</update>
+
+<!-- 이메일 인증 처리(정보 불러와 중복인증 인지 확인) -->
+	<select id="NM_userLoginCheck" parameterType="String" resultType="NM_user">
+	SELECT * FROM HS_NM_USER WHERE PID=#{pid}
+	</select>
+	
+<!-- 로그인 처리(정보 불러오기) -->
+	<select id="NM_userLogin" parameterType="String" resultType="NM_user">
+	SELECT * FROM HS_NM_USER WHERE ID=#{id}  <!-- AND PASSWORD=#{password} (암호화때문에 지움)-->
+	</select>
+	
+<!-- 회원 상세 정보 불러오기  -->
+	<select id="NM_userSelect" parameterType="String" resultType="NM_user">
+	SELECT * FROM ( SELECT HS_UNIQUE_USER.*, ROW_NUMBER() OVER(ORDER BY UPDATE_DATE DESC) RN FROM HS_UNIQUE_USER WHERE ID=#{id} )
+	 HS_UNIQUE_USER WHERE RN=1 AND ID=#{id}
+	</select>
+
+<!-- 회원정보 수정 -->
+	<update id="NM_userUpdate" parameterType="NM_user">
+	UPDATE HS_NM_USER SET NAME=#{name}, TEL=#{tel}, EMAIL=#{email}, ADRS_POST_CODE=#{adrs_post_code}, ADRS_STREET_1=#{adrs_street_1}, ADRS_STREET_2=#{adrs_street_2} WHERE PID=#{pid}
+	</update>
+	
+<!-- 회원수정 할 때 유니크USER에 저장 -->
+	<insert id="NM_uniqueUserInsert" parameterType="NM_user">
+		INSERT INTO HS_UNIQUE_USER
+		VALUES(#{pid},#{id},'변화 없음',#{name},#{gender},#{birthDay},#{tel},#{adrs_post_code},#{adrs_street_1},#{adrs_street_2},#{email},#{join_date},sysdate,'',1)
+	</insert>
+	
+<!-- 회원 탈퇴 -->
+	<delete id="NM_userDelete" parameterType="String">
+	DELETE FROM HS_NM_USER WHERE PID=#{pid}
+	</delete>
+
+<!-- 회원탈퇴 할 때 유니크USER에 저장 -->
+	<insert id="NM_uniqueUserDelete" parameterType="NM_user">
+		INSERT INTO HS_UNIQUE_USER
+		VALUES(#{pid},#{id},'',#{name},#{gender},#{birthDay},#{tel},#{adrs_post_code},#{adrs_street_1},#{adrs_street_2},#{email},'#{join_date}','',sysdate,'',3)
+	</insert>	
+	
+<!-- 비밀번호변경 -->
+	<update id="NM_userPasswordUpdate" parameterType="NM_user">
+	UPDATE HS_NM_USER SET PASSWORD=#{password} WHERE PID=#{pid}
+	</update>
+	
+<!-- 아이디 찾기(정보 불러오기) -->
+	<select id="NM_idFind" parameterType="String" resultType="NM_user">
+	SELECT * FROM HS_NM_USER WHERE EMAIL=#{email} AND NAME=#{name} AND BIRTHDAY=#{birthDay} AND TEL=#{tel}
+	</select>
+	
+<!-- 고객 이메일정보 가져오기 -->
+	<select id="user_Email" parameterType="String" resultType="String">
+	SELECT EMAIL FROM HS_UNIQUE_USER WHERE ID=#{id}
+	</select>
+	
+<!-- 공지사항 최근정보 5개만가져오기 -->
+	<select id="noticeList" resultType="notice">
+	SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY BOARDNUM DESC) AS RN, HS_NM_NOTICEBOARD.* FROM HS_NM_NOTICEBOARD)
+		WHERE RN BETWEEN 1 AND 5
+	</select>
+	
+<!-- 리뷰게시판 최근정보 5개만 가져오기 -->
+	<select id="reviewList" resultType="review">
+	SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY BOARDNUM DESC) AS RN, HS_NM_REVIEWBOARD.* FROM HS_NM_REVIEWBOARD)
+		WHERE RN BETWEEN 1 AND 5
+	</select>
+	
+<!-- 매장 최근정보 3개만 가져오기 -->
+	<select id="shopList" resultType="shop">
+	 SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY BOARDNUM DESC) AS RN, HS_NM_SHOP.* FROM HS_NM_SHOP WHERE SHOP_CONFIRM='1')
+		 WHERE RN BETWEEN 1 AND 4
+	</select>
+</mapper>
+

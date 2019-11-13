@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="sales">
+
+
+<!-- 본인 하루 매출 리스트 가져오기 -->
+	<select id="sales_List1" parameterType="sales" resultType="String">
+		SELECT SUM(PRICE_AFTER) FROM HS_NM_TICKETING WHERE COMPLETE='1' AND DISIGNER_PID=#{id}
+   		AND WORK_DATE LIKE #{date}
+	</select>
+	
+<!-- 하나씩 더해줄 본인 일주일 매출 가져오기  -->
+	<select id="sales_List2" parameterType="sales" resultType="String">
+		SELECT PRICE_AFTER FROM HS_NM_TICKETING WHERE COMPLETE='1' AND WORK_DATE=#{date} AND DISIGNER_PID=#{id}
+	</select>
+	
+<!-- 본인 월 매출 가져오기  -->
+	<select id="sales_List3" parameterType="sales" resultType="String">
+		SELECT SUM(PRICE_AFTER) FROM HS_NM_TICKETING WHERE COMPLETE='1' AND DISIGNER_PID=#{id}
+   		AND WORK_DATE LIKE #{date}
+	</select>
+	
+<!-- 매장 하루 매출 리스트 가져오기 -->
+	<select id="sales_List4" parameterType="sales" resultType="String">
+		SELECT SUM(PRICE_AFTER) FROM HS_NM_TICKETING WHERE COMPLETE='1' AND SHOP_PID=#{shop_pid}
+   		AND WORK_DATE LIKE #{date}
+	</select>
+	
+<!-- 하나씩 더해줄 매장 일주일 매출 가져오기  -->
+	<select id="sales_List5" parameterType="sales" resultType="String">
+		SELECT PRICE_AFTER FROM HS_NM_TICKETING WHERE COMPLETE='1' AND WORK_DATE=#{date} AND SHOP_PID=#{shop_pid}
+	</select>
+	
+<!-- 본인 월 매출 가져오기  -->
+	<select id="sales_List6" parameterType="sales" resultType="String">
+		SELECT SUM(PRICE_AFTER) FROM HS_NM_TICKETING WHERE COMPLETE='1' AND SHOP_PID=#{shop_pid}
+   		AND WORK_DATE LIKE #{date}
+	</select>
+
+</mapper>

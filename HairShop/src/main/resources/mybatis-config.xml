@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<typeAliases>  
+		<typeAlias alias="NM_user" type="com.hair.shop.HS_NM_USER.HS_NM_BEAN_User"/>
+		<typeAlias alias="DN_user" type="com.hair.shop.HS_DN_USER.HS_DN_BEAN_User"/>
+		<typeAlias alias="shop" type="com.hair.shop.HS_NM_SHOP.HS_NM_BEAN_Shop"/>
+		<typeAlias alias="page" type="com.hair.shop.HS_NM_SHOP.HS_NM_BEAN_Paging"/>
+		<typeAlias alias="review" type="com.hair.shop.HS_NM_REVIEW.HS_NM_BEAN_Review"/>
+		<typeAlias alias="comment" type="com.hair.shop.HS_NM_REVIEW.HS_NM_BEAN_Comment"/>
+		<typeAlias alias="price" type="com.hair.shop.HS_NM_TICETIGN.HS_NM_BEAN_PRICE"/>
+		<typeAlias alias="ticketing" type="com.hair.shop.HS_NM_TICETIGN.HS_NM_BEAN_TICKETING"/>
+		<typeAlias alias="closeds" type="com.hair.shop.HS_NM_TICETIGN.HS_NM_BEAN_CLOSEDS"/>
+		<typeAlias alias="sales" type="com.hair.shop.HS_NM_sales_Chart.HS_NM_BEAN_sales_Chart"/>
+		<typeAlias alias="notice" type="com.hair.shop.HS_NM_NOTICE.HS_NM_BEAN_Notice"/>
+		
+	</typeAliases>
+</configuration>
